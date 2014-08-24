@@ -3,14 +3,14 @@ This is an implentation of a Perceptron (http://en.wikipedia.org/wiki/Perceptron
 
 @author Ryan Drapeau
 """
-from numpy import dot
+from numpy import dot, array
 
 class Perceptron(object):
 
     def __init__(self):
         self.weights = None
         self.learning_rate = 0.1
-        self.max_iterations = 1000
+        self.max_iterations = 100
         self.dimension = None
         self.threshold = 0.5
 
@@ -33,7 +33,12 @@ class Perceptron(object):
         self.max_iterations = max_iterations
 
 
-    def train(self, training_samples, training_labels):
+    def set_weights(self, weights):
+        self.dimension = len(weights) - 1
+        self.weights = weights
+
+
+    def train_set(self, training_samples, training_labels):
         """
         Trains the Perceptron on the given sample vectors and labels.
 
@@ -41,23 +46,33 @@ class Perceptron(object):
         training_labels (Array[(int)]) - The labels of the sample vectors
         @throws (Exception) if the training samples and labels do not have the same dimension
         """
+        print 'Training Data'
         if len(training_samples) != len(training_labels) or len(training_samples) < 1:
             raise Exception("Samples and labels must have the same number of entries")
 
         self.dimension = len(training_samples[0])
-        self.weights = [0] * self.dimension
+        self.weights = array([0] * (self.dimension + 1))
         finished = False
         count = 0
+        training_samples = [array([1] + sample) for sample in training_samples]
         while not finished and count < self.max_iterations:
             finished = True
             count += 1
             for i, sample in enumerate(training_samples):
-                label = training_labels[i]
-                value = self.__step_function(dot(sample, self.weights))
+                finished &= self.train(sample, training_labels[i])
 
-                if self.__step_function(value) != self.__step_function(label):
-                    finished = False
-                    self.__update_weights(label - value, sample)
+        print 'Finished Training'
+        # print self.weights
+
+
+    def train(self, sample, label):
+        value = self.__step_function(dot(sample, self.weights))
+
+        if self.__step_function(value) != self.__step_function(label):
+            self.__update_weights(label - value, sample)
+            return False
+
+        return True
 
 
     def __step_function(self, value):
@@ -88,8 +103,9 @@ class Perceptron(object):
         @throws (Exception) if the Perceptron was not trained or if the vector's dimension is incorrect
         @return (int) The classification of the input vector
         """
-        if not self.weights or len(input_vector) != self.dimension:
+        if self.weights == None or len(input_vector) != self.dimension:
             raise Exception("Illegal dimension or not trained")
 
+        input_vector = [1] + input_vector
         value = dot(input_vector, self.weights)
-        return __step_function(value)
+        return self.__step_function(value)
